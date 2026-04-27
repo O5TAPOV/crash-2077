@@ -1,0 +1,7 @@
+### Реєстрація нового гравця
+POST http://localhost:3001/register
+Content-Type: application/json
+
+{
+    "username": "O5TAPOV"
+}

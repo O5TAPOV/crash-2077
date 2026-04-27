@@ -1,0 +1,1 @@
+export const API_URL = import.meta.env.PROD ? "https:[NEW-DOMAIN-BITCH]" : "http://localhost:3001";

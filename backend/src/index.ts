@@ -2,13 +2,32 @@ import express from 'express';
 import http from 'http';
 import {Server} from 'socket.io';
 import cors from 'cors';
-import { time } from 'console';
-import { stat } from 'fs';
+import { Request, Response } from 'express';
 
 const app = express();
 app.use(cors());
+app.use(express.json());
+
+type User = {
+    username: string;
+    balance: number;
+}
+
+const users: User[] = [];
 
 const server = http.createServer(app);
+
+app.post('/register', (req: Request, res : Response) => {
+    const {username} = req.body;
+    const user = users.find(u => u.username === username);
+    
+    if(user)
+        return res.json(user);
+
+    const newUser = {username, balance: 1000};
+    users.push(newUser);
+    res.json(newUser);
+})
 
 const io = new Server(server, {
     cors: {
@@ -25,6 +44,15 @@ let timerMs: number = 10000;
 
 io.on('connection', (socket) => {
     console.log(`🟢 Гравець підключився: ${socket.id}`);
+
+    socket.on('auth', (username: string) => {
+        if(users.find(u => u.username === username)) {
+            (socket as any).username = username;
+            console.log(`🔗 Сокет ${socket.id} авторизовано як ${username}`);
+        }
+        else { socket.emit('error', 'Користувача не знайдено'); }
+    })
+
 
     socket.on('disconnect', () => {
         console.log(`🔴 Гравець відключився: ${socket.id}`);
