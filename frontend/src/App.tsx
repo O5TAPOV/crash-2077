@@ -4,7 +4,7 @@ import GameScreen from './components/GameScreen';
 import BetControls from "./components/BetControls";
 import AuthScreen from "./components/AuthScreen";
 
-const API_URL = "http://localhost:3001"
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001"
 const socket = io(API_URL);
 
 export default function App() {
