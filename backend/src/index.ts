@@ -15,6 +15,8 @@ type User = {
 
 const users: User[] = [];
 
+const currentBets = new Map<string, number>();
+
 const server = http.createServer(app);
 
 app.post('/register', (req: Request, res : Response) => {
@@ -53,6 +55,57 @@ io.on('connection', (socket) => {
         else { socket.emit('error', 'Користувача не знайдено'); }
     })
 
+    socket.on('placeBet', (amount: number) => {
+        const username = (socket as any).username;
+        const user = users.find(u => u.username === username);
+
+        if(!user) {
+            socket.emit('error', 'Не авторизовано');
+            return;
+        }
+
+        if(currentGameState !== 'WAITING') {
+            socket.emit('error', 'Ставки приймаються тільки до старту!');
+            return;
+        }
+         
+        if(user.balance >= amount) {
+            user.balance -= amount;
+            currentBets.set(username, amount);
+            socket.emit('balanceUpdate', user.balance);
+            console.log(`Ставка в розмірі ${amount} від ${user.username} прийнята!`);
+        }
+        else { socket.emit('error', 'Недостатньо коштів'); }
+    })
+
+    socket.on('cashout', () => {
+        const username = (socket as any).username;
+        const user = users.find(u => u.username === username);
+
+        if(!user) {
+            socket.emit('error', 'Не авторизовано');
+            return;
+        }
+
+        if(currentGameState !== 'PLAYING') {
+            socket.emit('error', 'Забрати кошти можна тільки під час польоту ракети');
+            return;
+        }
+
+        if(!currentBets.has(username)) {
+            socket.emit('error', "Ви не робили ставку");
+            return;
+        }
+
+        const betAmount = currentBets.get(username) || 0;
+        const winAmount = betAmount * multiplier;
+        user.balance += winAmount;
+
+        currentBets.delete(username);
+        socket.emit('balanceUpdate', user.balance);
+
+        console.log(`Вітаємо гравця ${username}. Його куш: ${winAmount}`);
+    })
 
     socket.on('disconnect', () => {
         console.log(`🔴 Гравець відключився: ${socket.id}`);
@@ -73,10 +126,14 @@ function startGameLoop() {
                 timerMs -= 100;
                 break;
             case 'PLAYING':
-                multiplier = Number((multiplier + 0.05).toFixed(2))
+                multiplier = Number((multiplier * 1.02).toFixed(2))
                 if(multiplier >= crashPoint)
                 {
                     currentGameState = 'CRASHED';
+                    currentBets.forEach((amount, username) => {
+                        console.log(`💀 Гравець ${username} зажадібнів і втратив ${amount}$!`);
+                    });
+                    currentBets.clear();
                     timerMs = 5000;
                     console.log(`💥 Бум! Ракета впала на ${multiplier}x`);
                 }
@@ -95,7 +152,8 @@ function startGameLoop() {
         io.emit('gameStateUpdate', {
             status: currentGameState,
             multiplier: multiplier,
-            timeRemaining: timerMs
+            timeRemaining: timerMs,
+            players: Array.from(currentBets.entries()).map(([username, amount]) => ({username, amount}))
         })
     }, 100);
 }

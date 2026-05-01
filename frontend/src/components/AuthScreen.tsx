@@ -35,7 +35,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
 
     return (
         <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center font-mono">
-            <div className="w-[400px] p-8 bg-neutral-900 rounded-3xl border border-neutral-800 shadow-[0_0_50px_rgba(170,59,255,0.1)] flex flex-col gap-6">
+            <div className="w-full max-w-[400px] mx-4 sm:mx-0 p-8 bg-neutral-900 rounded-3xl border border-neutral-800 shadow-[0_0_50px_rgba(170,59,255,0.1)] flex flex-col gap-6">
 
                 <h1 className="text-4xl font-bold text-center text-fuchsia-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(217,70,239,0.5)]">
                     Login
